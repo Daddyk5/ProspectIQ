@@ -6,6 +6,8 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { Readable } from 'node:stream';
+import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -13,16 +15,31 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Forward /ai/* to the standalone AI service (ai-service/), streaming the
+ * response through so Copilot drafts render token by token.
  */
+const aiServiceUrl = (process.env['AI_SERVICE_URL'] ?? 'http://127.0.0.1:8787').replace(/\/$/, '');
+
+app.use('/ai', express.raw({ type: '*/*', limit: '16kb' }), async (req, res) => {
+  const upstreamAbort = new AbortController();
+  res.on('close', () => upstreamAbort.abort());
+  try {
+    const hasBody = req.method !== 'GET' && req.method !== 'HEAD' && Buffer.isBuffer(req.body);
+    const upstream = await fetch(aiServiceUrl + req.url, {
+      method: req.method,
+      headers: { 'Content-Type': req.get('content-type') ?? 'application/json' },
+      body: hasBody ? req.body : undefined,
+      signal: upstreamAbort.signal,
+    });
+    res.status(upstream.status);
+    res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'text/plain');
+    res.setHeader('Cache-Control', 'no-cache');
+    if (!upstream.body) return void res.end();
+    Readable.fromWeb(upstream.body as WebReadableStream).pipe(res);
+  } catch {
+    if (!res.headersSent) res.status(503).json({ error: 'AI service unreachable' });
+  }
+});
 
 /**
  * Serve static files from /browser

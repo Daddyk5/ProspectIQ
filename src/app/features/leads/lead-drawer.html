@@ -1,0 +1,285 @@
+@let l = lead();
+
+<div class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-[2px] animate-fade-in" (click)="close.emit()"></div>
+
+<aside
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Account 360: ' + l.company"
+  class="fixed inset-y-0 right-0 z-50 flex w-[min(580px,100vw)] flex-col border-l border-slate-800 bg-slate-900 shadow-2xl shadow-black/60 animate-drawer-in"
+>
+  <!-- Header -->
+  <header class="border-b border-slate-800 p-5">
+    <div class="flex items-start gap-3">
+      <div class="grid size-11 shrink-0 place-items-center rounded-xl border border-slate-700 bg-linear-to-br from-slate-800 to-slate-900 text-sm font-semibold text-slate-200">
+        {{ l.company.slice(0, 2).toUpperCase() }}
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="truncate text-base font-semibold text-white">{{ l.company }}</h2>
+          <span class="chip border-slate-700 text-slate-400">{{ l.domain }}</span>
+        </div>
+        <div class="mt-0.5 text-xs text-slate-400">{{ l.contact }} · {{ l.title }}</div>
+        <div class="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+          <lucide-icon [img]="icons.MapPin" [size]="11" /> {{ l.city }}, {{ l.region }} · {{ l.industry }} · {{ l.headcount.toLocaleString('en-US') }} FTE · {{ revenue() }}
+        </div>
+      </div>
+      <button class="btn btn-ghost h-8 px-2" (click)="close.emit()" aria-label="Close drawer">
+        <lucide-icon [img]="icons.X" [size]="16" />
+      </button>
+    </div>
+
+    <div class="mt-4 grid grid-cols-4 gap-2">
+      <div class="rounded-lg border border-slate-800 bg-slate-800/30 p-2">
+        <div class="text-[10px] text-slate-500">AI match</div>
+        <div class="mt-0.5 text-lg font-semibold text-white tabular-nums">{{ l.icp }}</div>
+      </div>
+      <div class="rounded-lg border border-slate-800 bg-slate-800/30 p-2">
+        <div class="text-[10px] text-slate-500">Reachability</div>
+        <div class="mt-0.5 text-lg font-semibold text-emerald-300 tabular-nums">{{ l.reachability }}%</div>
+      </div>
+      <div class="rounded-lg border border-slate-800 bg-slate-800/30 p-2">
+        <div class="text-[10px] text-slate-500">Intent</div>
+        <div class="mt-0.5 text-lg font-semibold text-rose-300 tabular-nums">{{ l.intentScore }}</div>
+      </div>
+      <div class="rounded-lg border border-slate-800 bg-slate-800/30 p-2">
+        <div class="text-[10px] text-slate-500">Headcount YoY</div>
+        <div class="mt-0.5 text-lg font-semibold tabular-nums" [class]="l.headcountGrowth >= 0 ? 'text-white' : 'text-rose-300'">{{ l.headcountGrowth > 0 ? '+' : '' }}{{ l.headcountGrowth }}%</div>
+      </div>
+    </div>
+
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button class="btn btn-primary" (click)="queue.emit()"><lucide-icon [img]="icons.Phone" [size]="13" /> Queue AI call</button>
+      <button class="btn btn-go" (click)="nurture.emit()"><lucide-icon [img]="icons.Send" [size]="13" /> Nurture</button>
+      <button class="btn" (click)="crm.emit('Salesforce')"><lucide-icon [img]="icons.Cloud" [size]="13" class="text-sky-400" /> Salesforce</button>
+      <button class="btn" (click)="crm.emit('HubSpot')"><lucide-icon [img]="icons.Database" [size]="13" class="text-orange-400" /> HubSpot</button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="flex gap-4 border-b border-slate-800 px-5" role="tablist">
+    @for (t of [{ id: 'intel', label: 'Account intelligence' }, { id: 'pathway', label: 'Reachability pathway' }, { id: 'copilot', label: 'AI Copilot' }]; track t.id) {
+      <button role="tab" [attr.aria-selected]="tab() === t.id"
+              class="-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-xs font-medium transition-colors"
+              [class]="tab() === t.id ? 'border-brand text-white' : 'border-transparent text-slate-500 hover:text-slate-300'"
+              (click)="tab.set($any(t.id))">
+        @if (t.id === 'copilot') {
+          <lucide-icon [img]="icons.Sparkles" [size]="12" class="text-indigo-400" />
+        }
+        {{ t.label }}
+      </button>
+    }
+  </nav>
+
+  <div class="min-h-0 flex-1 overflow-y-auto">
+    @if (data(); as d) {
+      @switch (tab()) {
+        @case ('intel') {
+          <div class="space-y-6 p-5 animate-fade-in">
+            <!-- Buying signals timeline -->
+            <section>
+              <h3 class="eyebrow mb-3">Buying signals timeline</h3>
+              <ol class="relative space-y-4 border-l border-slate-800 pl-5">
+                @for (e of d.timeline; track e.label; let i = $index) {
+                  <li class="relative" [style.animation]="'fade-up .35s ' + i * 0.06 + 's both'">
+                    <span class="absolute top-0 -left-7.75 grid size-5 place-items-center rounded-full border border-slate-700 bg-slate-900 text-indigo-300">
+                      <lucide-icon [img]="signalIcon[e.kind]" [size]="11" />
+                    </span>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-[13px] font-medium text-slate-100">{{ e.label }}</span>
+                      <span class="chip border-slate-700 text-slate-500">{{ kindLabel[e.kind] }}</span>
+                      <span class="ml-auto font-mono text-[10px] text-slate-500">{{ e.daysAgo }}d ago</span>
+                    </div>
+                    <div class="mt-0.5 text-xs text-slate-500">{{ e.detail }}</div>
+                  </li>
+                }
+              </ol>
+            </section>
+
+            <!-- Headcount velocity -->
+            @if (headcount(); as h) {
+              <section>
+                <div class="mb-2 flex items-center justify-between">
+                  <h3 class="eyebrow">Headcount velocity · 12 mo</h3>
+                  <span class="font-mono text-[11px] text-slate-400 tabular-nums">{{ h.min }} → {{ h.max }}</span>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+                  <svg viewBox="0 0 320 96" class="h-28 w-full" preserveAspectRatio="none" aria-label="Headcount trend chart">
+                    <defs>
+                      <linearGradient id="hc" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0" stop-color="#6366F1" stop-opacity=".4" />
+                        <stop offset="1" stop-color="#6366F1" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    @for (y of [24, 48, 72]; track y) {
+                      <line x1="0" x2="320" [attr.y1]="y" [attr.y2]="y" stroke="#1E293B" stroke-dasharray="3 4" />
+                    }
+                    <path [attr.d]="h.area" fill="url(#hc)" />
+                    <path [attr.d]="h.line" fill="none" stroke="#818CF8" stroke-width="2" vector-effect="non-scaling-stroke"
+                          pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="animation: draw 1s ease-out .1s forwards" />
+                  </svg>
+                  <div class="mt-1 flex justify-between font-mono text-[9px] text-slate-600">
+                    @for (m of months; track m) {
+                      <span>{{ m }}</span>
+                    }
+                  </div>
+                </div>
+              </section>
+            }
+
+            <!-- Tech stack -->
+            <section>
+              <h3 class="eyebrow mb-2">Detected tech stack</h3>
+              <div class="flex flex-wrap gap-1.5">
+                @for (t of l.techStack; track t; let i = $index) {
+                  <span class="chip border-slate-700 bg-slate-800/50 py-1 text-slate-300" [style.animation]="'fade-up .3s ' + i * 0.04 + 's both'">
+                    <lucide-icon [img]="icons.CodeXml" [size]="11" class="text-slate-500" /> {{ t }}
+                  </span>
+                }
+              </div>
+            </section>
+
+            <!-- Compliance -->
+            <section class="flex gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/6 p-3">
+              <lucide-icon [img]="icons.ShieldCheck" [size]="18" class="shrink-0 text-emerald-400" />
+              <div>
+                <div class="text-xs font-medium text-emerald-200">{{ d.compliance.regime }} · {{ d.compliance.status }}</div>
+                <div class="mt-0.5 text-[11px] text-slate-400">{{ d.compliance.detail }}</div>
+              </div>
+            </section>
+          </div>
+        }
+
+        @case ('pathway') {
+          <div class="space-y-6 p-5 animate-fade-in">
+            @if (bestPath(); as best) {
+              <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.07] p-3">
+                <div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-300">
+                  <lucide-icon [img]="icons.Target" [size]="12" /> Recommended entry point
+                </div>
+                <div class="mt-1 text-sm text-white">
+                  <span class="font-semibold">{{ best.title }}</span>: {{ best.probability }}% connect probability
+                  @if (cSuite(); as c) {
+                    @if (!c.recommended) {
+                      <span class="text-slate-400">vs {{ c.title }} {{ c.probability }}%</span>
+                    }
+                  }
+                </div>
+              </div>
+            }
+
+            <section>
+              <h3 class="eyebrow mb-2">Title reachability index</h3>
+              <svg viewBox="0 0 400 212" class="w-full" aria-label="Entry point pathway graph">
+                @for (p of paths(); track p.tier; let i = $index) {
+                  <path [attr.d]="curve(p)" fill="none"
+                        [attr.stroke]="p.recommended ? '#10B981' : '#334155'"
+                        [attr.stroke-width]="1 + p.probability / 14"
+                        [attr.stroke-opacity]="p.recommended ? 0.9 : 0.7"
+                        pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"
+                        [style.animation]="'draw .6s ease-out ' + i * 0.1 + 's forwards'" />
+                  @if (p.recommended) {
+                    <path [attr.d]="curve(p)" fill="none" stroke="#6EE7B7" stroke-width="1.5" class="animate-flow" />
+                  }
+                  <g [style.animation]="'fade-up .3s ' + (0.3 + i * 0.1) + 's both'">
+                    <circle cx="202" [attr.cy]="p.y" r="6" [attr.fill]="p.recommended ? '#10B981' : '#1E293B'" [attr.stroke]="p.recommended ? '#6EE7B7' : '#475569'" stroke-width="1.5" />
+                    <text x="216" [attr.y]="p.y - 3" font-size="11" [attr.fill]="p.recommended ? '#FFFFFF' : '#CBD5E1'" font-weight="500">{{ p.title }}</text>
+                    <text x="216" [attr.y]="p.y + 11" font-size="10" fill="#64748B">{{ p.tier }}</text>
+                    <text x="392" [attr.y]="p.y + 4" font-size="13" text-anchor="end" font-weight="600" [attr.fill]="p.recommended ? '#6EE7B7' : '#94A3B8'" style="font-variant-numeric: tabular-nums">{{ p.probability }}%</text>
+                  </g>
+                }
+                <circle cx="40" cy="106" r="16" fill="#6366F1" fill-opacity=".18" stroke="#6366F1" stroke-width="1.5" />
+                <text x="40" y="110" font-size="10" text-anchor="middle" fill="#E0E7FF" font-weight="700">{{ l.company.slice(0, 2).toUpperCase() }}</text>
+              </svg>
+            </section>
+
+            <section>
+              <h3 class="eyebrow mb-2">Optimal call windows · {{ l.contact }}</h3>
+              <ul class="space-y-2">
+                @for (w of d.callWindows; track $index; let i = $index) {
+                  <li class="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/20 px-3 py-2">
+                    <lucide-icon [img]="icons.Clock" [size]="14" [class]="i === 0 ? 'text-emerald-400' : 'text-slate-500'" />
+                    <span class="w-10 text-xs font-medium text-slate-200">{{ w.day }}</span>
+                    <span class="flex-1 font-mono text-xs text-slate-400">{{ w.window }}</span>
+                    <div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
+                      <div class="h-full rounded-full bg-emerald-500" [style.width.%]="w.probability"></div>
+                    </div>
+                    <span class="w-9 text-right font-mono text-xs text-emerald-300 tabular-nums">{{ w.probability }}%</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          </div>
+        }
+
+        @case ('copilot') {
+          <div class="space-y-4 p-5 animate-fade-in">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-medium text-white">Script &amp; pitch copilot</h3>
+                <p class="mt-0.5 text-xs text-slate-500">Generated from {{ l.contact.split(' ')[0] }}'s persona, live signals and {{ l.country === 'CA' ? 'CASL' : 'TCPA' }} rules.</p>
+              </div>
+              @if (aiStatus(); as ai) {
+                <span class="chip shrink-0 font-mono" [title]="ai.online ? 'Local Ollama model via AI service' : 'AI service ' + ai.status + '. Drafts use built-in templates'"
+                      [class]="ai.online ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-300'">
+                  <span class="size-1.5 rounded-full" [class]="ai.online ? 'bg-emerald-400' : 'bg-amber-400'"></span>
+                  {{ ai.online ? ai.model + ' · Ollama' : 'AI offline · templates' }}
+                </span>
+              } @else {
+                <span class="chip shrink-0 border-slate-700 text-slate-500">checking model…</span>
+              }
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              @for (o of copilotOptions; track o.kind) {
+                <button
+                  class="flex items-center gap-2.5 rounded-lg border p-3 text-left text-xs font-medium transition-all hover:-translate-y-px"
+                  [class]="copilotKind() === o.kind ? 'border-brand bg-indigo-500/10 text-white' : 'border-slate-800 bg-slate-800/30 text-slate-300 hover:border-slate-600'"
+                  [disabled]="drafting()"
+                  (click)="generate(o.kind)"
+                >
+                  <span class="grid size-7 place-items-center rounded-md bg-indigo-500/15 text-indigo-300">
+                    <lucide-icon [img]="o.icon" [size]="14" />
+                  </span>
+                  {{ o.label }}
+                  <lucide-icon [img]="icons.WandSparkles" [size]="12" class="ml-auto text-slate-500" />
+                </button>
+              }
+            </div>
+
+            @if (drafting()) {
+              <app-token-stream-loader [label]="copilotNoun()" [grounding]="[l.title, ...l.signals.slice(0, 2), l.country === 'CA' ? 'CASL' : 'TCPA']" />
+            } @else if (draft()) {
+              <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-950/60">
+                <div class="flex items-center justify-between border-b border-slate-800 px-3 py-2">
+                  <span class="flex items-center gap-1.5 text-[11px] font-medium text-indigo-300">
+                    <lucide-icon [img]="icons.Bot" [size]="12" /> {{ copilotNoun() }}
+                    <span class="text-slate-500">· {{ draftSource() === 'ollama' ? 'Ollama' : 'template' }}</span>
+                    @if (streaming()) {
+                      <span class="text-slate-500">· streaming</span>
+                    }
+                  </span>
+                  <div class="flex gap-1">
+                    <button class="btn btn-ghost h-6 px-2 text-[11px]" [disabled]="streaming()" (click)="generate(copilotKind()!)">
+                      <lucide-icon [img]="icons.RefreshCw" [size]="11" /> Regenerate
+                    </button>
+                    <button class="btn btn-ghost h-6 px-2 text-[11px]" [disabled]="streaming()" (click)="copy()">
+                      <lucide-icon [img]="icons.Copy" [size]="11" /> Copy
+                    </button>
+                  </div>
+                </div>
+                <pre class="max-h-[46vh] overflow-y-auto p-4 font-sans text-[12.5px] leading-relaxed whitespace-pre-wrap text-slate-300">{{ draft() }}@if (streaming()) {<span class="ml-px inline-block h-3.5 w-0.5 translate-y-0.5 bg-indigo-300" style="animation: caret 1s step-end infinite"></span>}</pre>
+              </div>
+            } @else {
+              <div class="rounded-xl border border-dashed border-slate-700 p-6 text-center text-xs text-slate-500">
+                <lucide-icon [img]="icons.Sparkles" [size]="18" class="mx-auto mb-2 text-slate-600" />
+                Choose a generator. The copilot will ground it on {{ l.signals[0] }} and {{ l.painPoint }}.
+              </div>
+            }
+          </div>
+        }
+      }
+    } @else {
+      <app-graph-loader [company]="l.company" />
+    }
+  </div>
+</aside>

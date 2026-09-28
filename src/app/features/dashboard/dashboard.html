@@ -1,0 +1,115 @@
+<div class="mx-auto max-w-360 space-y-4 p-4 md:p-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight text-white">Market Intelligence</h1>
+      <p class="text-xs text-slate-500">TAM coverage, connect performance and live buying signals · US &amp; Canada</p>
+    </div>
+    <button class="btn" (click)="load()" [disabled]="!data()">
+      <lucide-icon [img]="icons.RefreshCw" [size]="13" /> Re-scan market
+    </button>
+  </div>
+
+  @if (data(); as d) {
+    <!-- Metrics bar -->
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      @for (m of d.metrics; track m.label; let i = $index) {
+        <div class="card group p-4 transition-colors hover:border-slate-700" [style.animation]="'fade-up .4s ' + i * 0.05 + 's both'">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">{{ m.label }}</span>
+            <span class="chip" [class]="m.positive ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'">
+              <lucide-icon [img]="m.positive ? icons.TrendingUp : icons.TrendingDown" [size]="11" /> {{ m.delta }}
+            </span>
+          </div>
+          <div class="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums">{{ m.value }}</div>
+          <svg viewBox="0 0 200 36" class="mt-2 h-9 w-full" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient [attr.id]="'spark-' + i" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" [attr.stop-color]="i === 2 ? '#10B981' : '#6366F1'" stop-opacity=".35" />
+                <stop offset="1" [attr.stop-color]="i === 2 ? '#10B981' : '#6366F1'" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <path [attr.d]="sparkPath(m.spark, 200, 36) + ' L198,36 L2,36 Z'" [attr.fill]="'url(#spark-' + i + ')'" />
+            <path [attr.d]="sparkPath(m.spark, 200, 36)" fill="none" [attr.stroke]="i === 2 ? '#10B981' : '#818CF8'" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+          </svg>
+          <div class="mt-1 text-[11px] text-slate-500">{{ m.hint }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div class="space-y-4 xl:col-span-2">
+        <app-geo-panel [regions]="d.regions" class="block animate-fade-up" />
+
+        <!-- Optimal call window heatmap -->
+        <div class="card animate-fade-up" style="animation-delay: .1s">
+          <div class="card-header">
+            <div>
+              <div class="card-title flex items-center gap-1.5"><lucide-icon [img]="icons.Phone" [size]="13" class="text-emerald-400" /> Phone-in-hand intelligence</div>
+              <div class="text-[11px] text-slate-500">Predicted live-connect probability by local time · Directors &amp; VPs · last 90 days</div>
+            </div>
+            <span class="chip border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+              Peak {{ days[bestSlot().d] }} {{ hours[bestSlot().h] }} · {{ bestSlot().v }}%
+            </span>
+          </div>
+          <div class="overflow-x-auto p-4">
+            <div class="grid min-w-120 grid-cols-[36px_repeat(10,1fr)] gap-1">
+              <span></span>
+              @for (h of hours; track h) {
+                <span class="text-center font-mono text-[10px] text-slate-500">{{ h }}</span>
+              }
+              @for (row of d.callHeatmap; track $index; let di = $index) {
+                <span class="self-center font-mono text-[10px] text-slate-500">{{ days[di] }}</span>
+                @for (v of row; track $index; let hi = $index) {
+                  <div
+                    class="grid h-8 place-items-center rounded-md border font-mono text-[10px] tabular-nums transition-transform hover:scale-105"
+                    [class]="bestSlot().d === di && bestSlot().h === hi ? 'border-emerald-300 text-white' : 'border-transparent text-emerald-50/70'"
+                    [style.background-color]="heatColor(v)"
+                    [title]="days[di] + ' ' + hours[hi] + ' · ' + v + '% connect'"
+                  >
+                    {{ v | number: '1.0-0' }}
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live AI signal feed -->
+      <div class="card flex max-h-215 flex-col animate-fade-up" style="animation-delay: .05s">
+        <div class="card-header">
+          <div class="card-title flex items-center gap-2">
+            <span class="size-1.5 rounded-full bg-emerald-400" [class.animate-pulse-dot]="!feedPaused()"></span>
+            Real-time AI signal feed
+          </div>
+          <button class="btn btn-ghost h-7 px-2" (click)="feedPaused.update(p => !p)" [attr.aria-label]="feedPaused() ? 'Resume feed' : 'Pause feed'">
+            <lucide-icon [img]="feedPaused() ? icons.Play : icons.Pause" [size]="13" />
+          </button>
+        </div>
+        <ul class="flex-1 divide-y divide-slate-800/70 overflow-y-auto">
+          @for (s of feed(); track s.id) {
+            <li class="animate-fade-up">
+              <button class="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-800/40" (click)="openSignal(s)">
+                <span class="grid size-7 shrink-0 place-items-center rounded-lg border border-slate-700 bg-slate-800/60 text-indigo-300">
+                  <lucide-icon [img]="signalIcon[s.kind]" [size]="14" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[13px] leading-snug text-slate-300">
+                    <span class="font-medium text-white">{{ s.company }}</span> in {{ s.city }} {{ s.text }}
+                  </span>
+                  <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span class="chip border-rose-500/30 bg-rose-500/10 text-rose-300">Intent +{{ s.intentDelta }}%</span>
+                    <span class="chip border-slate-700 text-slate-400">{{ kindLabel[s.kind] }}</span>
+                    <span class="font-mono text-[10px] text-slate-500">{{ s.minutesAgo === 0 ? 'just now' : s.minutesAgo + 'm ago' }} · {{ s.region }}</span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  } @else {
+    <app-radar-loader />
+  }
+</div>

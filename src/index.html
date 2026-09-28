@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
-  <title>ProspectiqFrontend</title>
+  <title>ProspectIQ — Lead Intelligence</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0F172A">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* Pre-boot mark: painted before the JS bundle arrives, replaced by <app-boot-splash> on bootstrap. */
+    .preboot { position: fixed; inset: 0; display: grid; place-items: center; background: #0F172A; }
+    .preboot i { width: 10px; height: 10px; border-radius: 9999px; background: #6366F1; box-shadow: 0 0 24px #6366F1; animation: preboot 1.2s ease-in-out infinite; }
+    @keyframes preboot { 50% { transform: scale(1.8); opacity: .5; } }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root><div class="preboot"><i></i></div></app-root>
 </body>
 </html>

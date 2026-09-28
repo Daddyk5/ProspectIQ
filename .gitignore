@@ -42,3 +42,14 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# AI service runtime files
+/ai-service/.service.pid
+/ai-service/*.log
+
+# React client + Express server
+node_modules/
+/client/dist
+.env
+.env.*
+!.env.example

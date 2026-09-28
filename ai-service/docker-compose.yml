@@ -1,0 +1,15 @@
+# Runs the AI gateway on its own, next to the Ollama already installed on the host.
+#   docker compose -f ai-service/docker-compose.yml up -d --build
+services:
+  ai-service:
+    build: .
+    container_name: prospectiq-ai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: prospectiq-copilot
+      ALLOWED_ORIGINS: http://localhost:4200,http://localhost:4000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
