@@ -1,0 +1,200 @@
+<div class="mx-auto max-w-360 space-y-4 p-4 md:p-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight text-white">Lead Discovery</h1>
+      <p class="text-xs text-slate-500">AI-qualified prospects ranked by ICP fit, reachability and buying intent</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="seg" role="group" aria-label="Currency">
+        <button [attr.aria-pressed]="currency() === 'USD'" (click)="currency.set('USD')">$ USD</button>
+        <button [attr.aria-pressed]="currency() === 'CAD'" (click)="currency.set('CAD')">$ CAD</button>
+      </div>
+      <button class="btn" (click)="load()" [disabled]="!leads()">
+        <lucide-icon [img]="icons.RefreshCw" [size]="13" /> Re-enrich
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="card flex flex-wrap items-center gap-2 p-2.5">
+    <div class="relative">
+      <lucide-icon [img]="icons.Search" [size]="13" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-slate-500" />
+      <input class="field w-52 pl-8" placeholder="Company, contact, city…" [value]="query()" (input)="query.set($any($event.target).value)" />
+    </div>
+    <div class="seg" role="group" aria-label="Region">
+      <button [attr.aria-pressed]="region() === 'ALL'" (click)="region.set('ALL')">All</button>
+      <button [attr.aria-pressed]="region() === 'US'" (click)="region.set('US')">🇺🇸 US</button>
+      <button [attr.aria-pressed]="region() === 'CA'" (click)="region.set('CA')">🇨🇦 Canada</button>
+    </div>
+    <select class="field" aria-label="Industry" [value]="industry()" (change)="industry.set($any($event.target).value)">
+      <option value="">All industries</option>
+      @for (i of industries; track i) {
+        <option [value]="i">{{ i }}</option>
+      }
+    </select>
+    <select class="field" aria-label="Revenue" [value]="revenue()" (change)="revenue.set($any($event.target).value)">
+      @for (b of bands; track b) {
+        <option [value]="b">{{ revenueLabel(b) }}</option>
+      }
+    </select>
+    <label class="field flex items-center gap-2">
+      <span class="text-slate-500">ICP ≥</span>
+      <input type="range" min="0" max="95" step="5" class="w-24 accent-indigo-500" [value]="icpMin()" (input)="icpMin.set(+$any($event.target).value)" aria-label="Minimum ICP score" />
+      <span class="w-5 font-mono text-slate-200 tabular-nums">{{ icpMin() }}</span>
+    </label>
+    <div class="flex items-center gap-1">
+      <span class="px-1 text-xs text-slate-500">Intent</span>
+      @for (lvl of intents; track lvl) {
+        <button class="chip cursor-pointer transition-colors"
+                [class]="intentFilter().has(lvl) ? intentTone(lvl) : 'border-slate-700 text-slate-500 hover:text-slate-300'"
+                [attr.aria-pressed]="intentFilter().has(lvl)" (click)="toggleIntent(lvl)">
+          {{ lvl }}
+        </button>
+      }
+    </div>
+    @if (activeFilterCount()) {
+      <button class="btn btn-ghost ml-auto" (click)="resetFilters()">
+        <lucide-icon [img]="icons.X" [size]="12" /> Clear {{ activeFilterCount() }}
+      </button>
+    }
+  </div>
+
+  @if (leads()) {
+    <div class="card relative overflow-hidden animate-fade-in">
+      <!-- Bulk action bar -->
+      @if (selected().size) {
+        <div class="flex flex-wrap items-center gap-2 border-b border-indigo-500/30 bg-indigo-500/10 px-4 py-2 animate-fade-in">
+          <span class="text-xs font-medium text-indigo-200">{{ selected().size }} selected</span>
+          <span class="mx-1 h-4 w-px bg-indigo-500/30"></span>
+          <button class="btn" (click)="pushToCrm('Salesforce')"><lucide-icon [img]="icons.Cloud" [size]="13" class="text-sky-400" /> Push to Salesforce</button>
+          <button class="btn" (click)="pushToCrm('HubSpot')"><lucide-icon [img]="icons.Database" [size]="13" class="text-orange-400" /> Push to HubSpot</button>
+          <button class="btn btn-primary" (click)="addToQueue()"><lucide-icon [img]="icons.Phone" [size]="13" /> Add to AI Call Queue</button>
+          <button class="btn btn-go" (click)="startNurture()"><lucide-icon [img]="icons.Send" [size]="13" /> Trigger nurture sequence</button>
+          <button class="btn btn-ghost ml-auto" (click)="clearSelection()">Deselect</button>
+        </div>
+      }
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-270 text-left text-xs">
+          <thead class="border-b border-slate-800 text-[11px] text-slate-500">
+            <tr>
+              <th class="w-10 py-2.5 pl-4">
+                <input type="checkbox" class="size-3.5 accent-indigo-500" [checked]="allSelected()" (change)="toggleAll()" aria-label="Select all" />
+              </th>
+              <th class="py-2.5 font-medium">Company &amp; contact</th>
+              <th class="py-2.5 font-medium">Title</th>
+              <th class="py-2.5 font-medium">Geography</th>
+              @for (col of [{ k: 'icp', l: 'AI match' }, { k: 'reachability', l: 'Reachability' }]; track col.k) {
+                <th class="py-2.5 font-medium">
+                  <button class="inline-flex items-center gap-1 hover:text-slate-300" [class.text-indigo-300]="sortKey() === col.k" (click)="sortKey.set($any(col.k))">
+                    {{ col.l }} @if (sortKey() === col.k) { ↓ }
+                  </button>
+                </th>
+              }
+              <th class="py-2.5 font-medium">
+                <button class="inline-flex items-center gap-1 hover:text-slate-300" [class.text-indigo-300]="sortKey() === 'intentScore'" (click)="sortKey.set('intentScore')">
+                  Intent signals @if (sortKey() === 'intentScore') { ↓ }
+                </button>
+              </th>
+              <th class="py-2.5 pr-4 text-right font-medium">Quick actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/70">
+            @for (l of filtered(); track l.id; let i = $index) {
+              <tr
+                class="group cursor-pointer transition-colors hover:bg-slate-800/40"
+                [class]="openLead()?.id === l.id ? 'bg-indigo-500/10' : selected().has(l.id) ? 'bg-indigo-500/5' : ''"
+                [style.animation]="'fade-up .3s ' + i * 0.025 + 's both'"
+                (click)="openLead.set(l)"
+              >
+                <td class="py-3 pl-4" (click)="$event.stopPropagation()">
+                  <input type="checkbox" class="size-3.5 accent-indigo-500" [checked]="selected().has(l.id)" (change)="toggle(l.id)" [attr.aria-label]="'Select ' + l.company" />
+                </td>
+                <td class="py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="grid size-8 shrink-0 place-items-center rounded-lg border border-slate-700 bg-slate-800 text-[11px] font-semibold text-slate-300">
+                      {{ l.company.slice(0, 2).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="truncate font-medium text-slate-100">{{ l.company }}</div>
+                      <div class="truncate text-slate-500">{{ l.contact }} · {{ money(l) }} · {{ l.industry }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3">
+                  <div class="max-w-44 truncate text-slate-300">{{ l.title }}</div>
+                  <div class="text-[11px] text-slate-500">{{ l.seniority }}</div>
+                </td>
+                <td class="py-3">
+                  <div class="flex items-center gap-1.5 text-slate-300">
+                    <span>{{ l.country === 'CA' ? '🇨🇦' : '🇺🇸' }}</span> {{ l.city }}, {{ l.region }}
+                  </div>
+                  <div class="text-[11px] text-slate-500">{{ l.country === 'CA' ? 'CASL' : 'TCPA' }} · {{ l.timezone }}</div>
+                </td>
+                <td class="py-3">
+                  <span class="chip font-mono tabular-nums" [class]="scoreTone(l.icp)">
+                    <lucide-icon [img]="icons.Sparkles" [size]="10" /> {{ l.icp }}
+                  </span>
+                </td>
+                <td class="py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="h-1.5 w-16 overflow-hidden rounded-full bg-slate-800">
+                      <div class="h-full rounded-full" [class]="l.reachability >= 65 ? 'bg-emerald-500' : l.reachability >= 45 ? 'bg-amber-500' : 'bg-rose-500'" [style.width.%]="l.reachability"></div>
+                    </div>
+                    <span class="font-mono text-slate-300 tabular-nums">{{ l.reachability }}%</span>
+                  </div>
+                  <div class="mt-0.5 text-[11px] text-slate-500">{{ l.bestWindow }}</div>
+                </td>
+                <td class="py-3">
+                  <div class="flex max-w-64 flex-wrap gap-1">
+                    <span class="chip" [class]="intentTone(l.intent)">
+                      <lucide-icon [img]="icons.Flame" [size]="10" /> {{ l.intentScore }}
+                    </span>
+                    @for (s of l.signals.slice(0, 2); track s) {
+                      <span class="chip border-slate-700 text-slate-400">{{ s }}</span>
+                    }
+                  </div>
+                </td>
+                <td class="py-3 pr-4">
+                  <div class="flex items-center justify-end gap-1">
+                    @if (synced().get(l.id); as crm) {
+                      <span class="chip border-sky-500/30 bg-sky-500/10 text-sky-300">{{ crm }}</span>
+                    }
+                    <button class="btn btn-ghost h-7 px-2" [class]="queued().has(l.id) ? 'text-emerald-400!' : ''" [attr.aria-label]="'Add ' + l.contact + ' to call queue'" title="Add to AI Call Queue" (click)="addToQueue([l.id], $event)">
+                      <lucide-icon [img]="queued().has(l.id) ? icons.Check : icons.Phone" [size]="14" />
+                    </button>
+                    <button class="btn btn-ghost h-7 px-2" [class]="nurturing().has(l.id) ? 'text-emerald-400!' : ''" [attr.aria-label]="'Start nurture for ' + l.contact" title="Trigger email nurture" (click)="startNurture([l.id], $event)">
+                      <lucide-icon [img]="nurturing().has(l.id) ? icons.Check : icons.Mail" [size]="14" />
+                    </button>
+                    <button class="btn btn-ghost h-7 px-2 opacity-60 group-hover:opacity-100" title="Open Account 360" aria-label="Open Account 360">
+                      <lucide-icon [img]="icons.ChevronRight" [size]="14" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="py-16 text-center">
+                  <lucide-icon [img]="icons.Funnel" [size]="20" class="mx-auto text-slate-600" />
+                  <div class="mt-2 text-sm text-slate-300">No leads match these filters</div>
+                  <button class="btn mt-3" (click)="resetFilters()">Clear filters</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-800 px-4 py-2.5 text-[11px] text-slate-500">
+        <span>{{ filtered().length }} of {{ leads()!.length }} prospects · sorted by {{ sortKey() === 'icp' ? 'AI match' : sortKey() === 'reachability' ? 'reachability' : 'intent' }}</span>
+        <span class="hidden items-center gap-1.5 sm:flex"><span class="kbd">⌘</span><span class="kbd">K</span> to jump to any account</span>
+      </div>
+    </div>
+  } @else {
+    <app-enrichment-loader />
+  }
+</div>
+
+@if (openLead(); as lead) {
+  <app-lead-drawer [lead]="lead" [currency]="currency()" (close)="openLead.set(null)"
+                   (queue)="addToQueue([lead.id])" (nurture)="startNurture([lead.id])" (crm)="pushToCrm($event, [lead.id])" />
+}

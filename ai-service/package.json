@@ -1,0 +1,15 @@
+{
+  "name": "prospectiq-ai-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone AI gateway for ProspectIQ, backed by a local Ollama model",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "model:create": "ollama create prospectiq-copilot -f Modelfile"
+  }
+}

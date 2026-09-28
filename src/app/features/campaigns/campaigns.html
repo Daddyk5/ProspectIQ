@@ -1,0 +1,204 @@
+<div class="mx-auto max-w-360 space-y-4 p-4 md:p-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-lg font-semibold tracking-tight text-white">Campaign Canvas</h1>
+      <p class="text-xs text-slate-500">Multi-channel outbound sequences with live conversion at every touchpoint</p>
+    </div>
+    @if (campaign(); as c) {
+      <div class="flex items-center gap-2">
+        <button class="btn" (click)="optimize()"><lucide-icon [img]="icons.WandSparkles" [size]="13" class="text-indigo-300" /> AI optimize</button>
+        <button class="btn" [class]="c.status === 'Running' ? '' : 'btn-go'" (click)="toggleStatus()">
+          <lucide-icon [img]="c.status === 'Running' ? icons.Pause : icons.Play" [size]="13" />
+          {{ c.status === 'Running' ? 'Pause' : 'Resume' }}
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (campaigns(); as list) {
+    <!-- Campaign switcher -->
+    <div class="flex gap-2 overflow-x-auto pb-1">
+      @for (c of list; track c.id) {
+        <button
+          class="min-w-64 rounded-xl border p-3 text-left transition-colors"
+          [class]="c.id === activeId() ? 'border-brand bg-indigo-500/10' : 'border-slate-800 bg-slate-800/20 hover:border-slate-700'"
+          (click)="switchTo(c.id)"
+        >
+          <div class="flex items-center gap-2">
+            <span class="size-1.5 rounded-full" [class]="c.status === 'Running' ? 'bg-emerald-400 animate-pulse-dot' : 'bg-amber-400'"></span>
+            <span class="truncate text-xs font-medium text-slate-100">{{ c.name }}</span>
+          </div>
+          <div class="mt-1 truncate text-[11px] text-slate-500">{{ c.audience }}</div>
+          <div class="mt-2 flex gap-3 font-mono text-[11px] tabular-nums">
+            <span class="text-slate-300">{{ c.meetings }} mtgs</span>
+            <span class="text-emerald-300">${{ compact(c.pipelineUsd) }} pipe</span>
+          </div>
+        </button>
+      }
+    </div>
+
+    @if (compiling()) {
+      <app-sequence-loader />
+    } @else if (campaign(); as c) {
+      <div class="grid gap-4 xl:grid-cols-[1fr_300px]">
+        <!-- Canvas -->
+        <div class="card overflow-hidden animate-fade-in">
+          <div class="card-header">
+            <div class="card-title flex items-center gap-2">
+              <lucide-icon [img]="icons.Workflow" [size]="14" class="text-indigo-400" /> Sequence workflow
+            </div>
+            <div class="flex items-center gap-3 font-mono text-[11px] text-slate-400 tabular-nums">
+              <span>{{ c.steps[0].entered.toLocaleString('en-US') }} enrolled</span>
+              <span class="text-emerald-300">{{ overallConversion() }}% → meeting</span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto bg-[radial-gradient(rgb(51_65_85/0.55)_1px,transparent_1px)] bg-size-[18px_18px] p-6">
+            <div class="flex min-w-max items-stretch">
+              <!-- Entry trigger -->
+              <div class="flex w-36 flex-col justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 p-3">
+                <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-300">
+                  <lucide-icon [img]="icons.Zap" [size]="12" class="text-amber-300" /> Trigger
+                </div>
+                <div class="mt-1 text-[11px] leading-snug text-slate-500">Intent ≥ 60 &amp; ICP ≥ 80 enters sequence</div>
+              </div>
+
+              @for (s of c.steps; track s.id; let i = $index) {
+                <!-- Connector -->
+                <div class="relative flex w-24 flex-col items-center justify-center">
+                  <svg viewBox="0 0 96 20" class="h-5 w-full" aria-hidden="true">
+                    <line x1="0" y1="10" x2="90" y2="10" stroke="#334155" stroke-width="2" />
+                    @if (c.status === 'Running') {
+                      <line x1="0" y1="10" x2="90" y2="10" stroke="#818CF8" stroke-width="2" class="animate-flow" />
+                    }
+                    <path d="M86,5 L94,10 L86,15" fill="none" stroke="#64748B" stroke-width="2" />
+                  </svg>
+                  <span class="mt-1 font-mono text-[10px] text-slate-500">
+                    {{ i === 0 ? 'enroll' : '+' + (s.day - c.steps[i - 1].day) + 'd' }}
+                  </span>
+                </div>
+
+                <!-- Step node -->
+                <button
+                  class="relative w-52 rounded-xl border bg-slate-900 p-3 text-left transition-all hover:-translate-y-0.5"
+                  [class]="selectedStepId() === s.id ? 'border-brand shadow-[0_0_0_4px_rgb(99_102_241/0.15)]' : 'border-slate-700 hover:border-slate-500'"
+                  [style.animation]="'fade-up .4s ' + i * 0.08 + 's both'"
+                  (click)="selectedStepId.set(s.id)"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="grid size-7 place-items-center rounded-lg"
+                          [class]="s.channel === 'call' ? 'bg-emerald-500/15 text-emerald-300' : s.channel === 'email' ? 'bg-indigo-500/15 text-indigo-300' : s.channel === 'linkedin' ? 'bg-sky-500/15 text-sky-300' : 'bg-violet-500/15 text-violet-300'">
+                      <lucide-icon [img]="channelIcon[s.channel]" [size]="14" />
+                    </span>
+                    <span class="font-mono text-[10px] tracking-wider text-slate-500 uppercase">Day {{ s.day }}</span>
+                    @if (s.aiPersonalized) {
+                      <span class="chip ml-auto border-indigo-500/30 bg-indigo-500/10 text-indigo-300"><lucide-icon [img]="icons.Sparkles" [size]="9" /> AI</span>
+                    }
+                  </div>
+                  <div class="mt-2 text-[13px] font-medium text-slate-100">{{ s.title }}</div>
+                  <div class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">{{ s.detail }}</div>
+                  <div class="mt-3 grid grid-cols-3 gap-1 border-t border-slate-800 pt-2 font-mono text-[11px] tabular-nums">
+                    <div><div class="text-[9px] text-slate-500">IN</div><div class="text-slate-300">{{ compact(s.entered) }}</div></div>
+                    <div><div class="text-[9px] text-slate-500">DONE</div><div class="text-slate-300">{{ compact(s.completed) }}</div></div>
+                    <div><div class="text-[9px] text-slate-500">CONV</div><div [class]="stepConversionTone(s)">{{ s.conversion }}%</div></div>
+                  </div>
+                  <div class="mt-2 h-1 overflow-hidden rounded-full bg-slate-800">
+                    <div class="h-full rounded-full bg-linear-to-r from-brand to-go" [style.width.%]="(s.completed / s.entered) * 100"></div>
+                  </div>
+                  <div class="mt-2 flex items-center gap-1 text-[10px] text-slate-500">
+                    <lucide-icon [img]="icons.ChevronRight" [size]="10" /> {{ s.branch }}
+                  </div>
+                </button>
+              }
+
+              <!-- Outcome -->
+              <div class="relative flex w-20 items-center">
+                <svg viewBox="0 0 80 20" class="h-5 w-full" aria-hidden="true">
+                  <line x1="0" y1="10" x2="74" y2="10" stroke="#334155" stroke-width="2" />
+                  <path d="M70,5 L78,10 L70,15" fill="none" stroke="#64748B" stroke-width="2" />
+                </svg>
+              </div>
+              <div class="flex w-36 flex-col justify-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3">
+                <div class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-300">
+                  <lucide-icon [img]="icons.Calendar" [size]="12" /> Meetings booked
+                </div>
+                <div class="mt-1 text-2xl font-semibold text-white tabular-nums">{{ c.meetings }}</div>
+                <div class="font-mono text-[10px] text-emerald-300/80">${{ compact(c.pipelineUsd) }} pipeline</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Funnel -->
+          <div class="border-t border-slate-800 p-4">
+            <div class="eyebrow mb-3">Touchpoint funnel</div>
+            <div class="space-y-2">
+              @for (s of c.steps; track s.id) {
+                <div class="flex items-center gap-3 text-xs">
+                  <span class="w-40 truncate text-slate-400">Day {{ s.day }} · {{ s.title }}</span>
+                  <div class="relative h-4 flex-1 overflow-hidden rounded bg-slate-800/60">
+                    <div class="absolute inset-y-0 left-0 rounded bg-slate-600/60 transition-[width] duration-700" [style.width.%]="(s.entered / maxEntered()) * 100"></div>
+                    <div class="absolute inset-y-0 left-0 rounded bg-brand/80 transition-[width] duration-700" [style.width.%]="(s.completed / maxEntered()) * 100"></div>
+                  </div>
+                  <span class="w-12 text-right font-mono text-slate-300 tabular-nums">{{ s.conversion }}%</span>
+                </div>
+              }
+            </div>
+            <div class="mt-3 flex gap-4 text-[10px] text-slate-500">
+              <span class="flex items-center gap-1"><span class="size-2 rounded-sm bg-slate-600/60"></span>Entered</span>
+              <span class="flex items-center gap-1"><span class="size-2 rounded-sm bg-brand/80"></span>Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspector -->
+        <aside class="card h-fit">
+          @if (selectedStep(); as s) {
+            <div class="card-header">
+              <div class="card-title">Step inspector</div>
+              <span class="chip border-slate-700 text-slate-400">Day {{ s.day }}</span>
+            </div>
+            <div class="space-y-4 p-4 text-xs animate-fade-in">
+              <div>
+                <div class="text-sm font-medium text-white">{{ s.title }}</div>
+                <div class="mt-0.5 text-slate-500">{{ s.detail }}</div>
+              </div>
+              <label class="block">
+                <span class="text-slate-500">Send on day</span>
+                <input type="number" min="1" max="30" class="field mt-1 w-full" [value]="s.day" (change)="updateStep({ day: +$any($event.target).value || s.day })" />
+              </label>
+              <label class="flex items-center justify-between gap-2">
+                <span>
+                  <span class="block text-slate-300">AI personalization</span>
+                  <span class="text-[11px] text-slate-500">Rewrite each touch from live signals</span>
+                </span>
+                <button role="switch" [attr.aria-checked]="s.aiPersonalized"
+                        class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
+                        [class]="s.aiPersonalized ? 'bg-brand' : 'bg-slate-700'"
+                        (click)="updateStep({ aiPersonalized: !s.aiPersonalized })">
+                  <span class="absolute top-0.5 left-0.5 size-4 rounded-full bg-white transition-transform" [class.translate-x-4]="s.aiPersonalized"></span>
+                </button>
+              </label>
+              <label class="block">
+                <span class="text-slate-500">Branch rule</span>
+                <input class="field mt-1 w-full" [value]="s.branch" (change)="updateStep({ branch: $any($event.target).value })" />
+              </label>
+              <div class="grid grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-2 text-center font-mono tabular-nums">
+                <div><div class="text-[10px] text-slate-500">Entered</div><div class="mt-0.5 text-slate-200">{{ s.entered.toLocaleString('en-US') }}</div></div>
+                <div><div class="text-[10px] text-slate-500">Completed</div><div class="mt-0.5 text-slate-200">{{ s.completed.toLocaleString('en-US') }}</div></div>
+                <div><div class="text-[10px] text-slate-500">Conv.</div><div class="mt-0.5" [class]="stepConversionTone(s)">{{ s.conversion }}%</div></div>
+              </div>
+              @if (s.channel === 'call') {
+                <div class="flex gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/6 p-2.5 text-[11px] text-emerald-200">
+                  <lucide-icon [img]="icons.Clock" [size]="13" class="mt-0.5 shrink-0" />
+                  Dials are released per contact at their forecast phone-in-hand window, not in a batch.
+                </div>
+              }
+            </div>
+          }
+        </aside>
+      </div>
+    }
+  } @else {
+    <app-sequence-loader />
+  }
+</div>
