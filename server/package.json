@@ -1,0 +1,22 @@
+{
+  "name": "prospectiq-server",
+  "version": "1.0.0",
+  "description": "ProspectIQ API, WebSocket hub and Ollama AI gateway",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/index.js",
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "start:production": "node --env-file-if-exists=.env src/index.js --production",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  }
+}

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* The React client, server and AI service are separate apps; keep their classes out of this bundle. */
+@source not "../client";
+@source not "../server";
+@source not "../ai-service";
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;

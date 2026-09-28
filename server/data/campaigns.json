@@ -1,0 +1,53 @@
+[
+  {
+    "id": "seq-ca-q4",
+    "name": "Q4 Canada Expansion",
+    "audience": "Directors of Sales Ops · 50–500 FTE",
+    "status": "Running",
+    "compliance": "CASL",
+    "meetingsBooked": 64,
+    "pipelineUsd": 1380000,
+    "activeGeos": ["ON", "BC", "AB", "QC"],
+    "trigger": { "intentMin": 60, "icpMin": 80 },
+    "steps": [
+      { "id": "s1", "day": 1, "channel": "call", "title": "Precision AI Call Window", "detail": "Dial each contact at their predicted phone-in-hand window", "inbound": 1840, "done": 1612, "conversionRate": 21.4 },
+      { "id": "s2", "day": 2, "channel": "email", "title": "Hyper-Personalized Email", "detail": "Signal-aware first line with CASL sender ID + unsubscribe", "inbound": 1446, "done": 1402, "conversionRate": 38.2 },
+      { "id": "s3", "day": 4, "channel": "linkedin", "title": "LinkedIn Touchpoint", "detail": "Connection note referencing the trigger event", "inbound": 1188, "done": 961, "conversionRate": 27.9 },
+      { "id": "s4", "day": 5, "channel": "crm", "title": "Automatic CRM Sync", "detail": "Push activity, intent and next-best-action to Salesforce", "inbound": 1188, "done": 1188, "conversionRate": 5.4 }
+    ]
+  },
+  {
+    "id": "seq-us-saas",
+    "name": "US Mid-Market SaaS Blitz",
+    "audience": "VP Sales / RevOps · Series A–C",
+    "status": "Running",
+    "compliance": "TCPA",
+    "meetingsBooked": 91,
+    "pipelineUsd": 2140000,
+    "activeGeos": ["TX", "CO", "GA", "MA", "CA"],
+    "trigger": { "intentMin": 60, "icpMin": 80 },
+    "steps": [
+      { "id": "s1", "day": 1, "channel": "call", "title": "Precision AI Call Window", "detail": "TCPA-scrubbed business lines, local-presence caller ID", "inbound": 2620, "done": 2310, "conversionRate": 19.8 },
+      { "id": "s2", "day": 2, "channel": "email", "title": "Hyper-Personalized Email", "detail": "References hiring spree and tech-stack gap", "inbound": 2102, "done": 2064, "conversionRate": 41.5 },
+      { "id": "s3", "day": 4, "channel": "linkedin", "title": "LinkedIn Touchpoint", "detail": "Profile view plus voice note", "inbound": 1734, "done": 1390, "conversionRate": 24.1 },
+      { "id": "s4", "day": 5, "channel": "crm", "title": "Automatic CRM Sync", "detail": "HubSpot sync with deal-stage automation", "inbound": 1734, "done": 1734, "conversionRate": 5.2 }
+    ]
+  },
+  {
+    "id": "seq-hc-it",
+    "name": "Healthcare IT Decision Makers",
+    "audience": "Directors of RevOps · Healthcare IT",
+    "status": "Paused",
+    "compliance": "CASL + TCPA",
+    "meetingsBooked": 23,
+    "pipelineUsd": 610000,
+    "activeGeos": ["BC", "ON", "AZ", "FL"],
+    "trigger": { "intentMin": 65, "icpMin": 80 },
+    "steps": [
+      { "id": "s1", "day": 1, "channel": "call", "title": "Precision AI Call Window", "detail": "Avoid clinic hours; target admin windows", "inbound": 720, "done": 640, "conversionRate": 16.2 },
+      { "id": "s2", "day": 2, "channel": "email", "title": "Hyper-Personalized Email", "detail": "HIPAA / PHIPA-aware messaging", "inbound": 603, "done": 590, "conversionRate": 33.0 },
+      { "id": "s3", "day": 4, "channel": "linkedin", "title": "LinkedIn Touchpoint", "detail": "Share a relevant case study", "inbound": 512, "done": 402, "conversionRate": 22.6 },
+      { "id": "s4", "day": 5, "channel": "crm", "title": "Automatic CRM Sync", "detail": "Salesforce Health Cloud sync", "inbound": 512, "done": 512, "conversionRate": 4.5 }
+    ]
+  }
+]
